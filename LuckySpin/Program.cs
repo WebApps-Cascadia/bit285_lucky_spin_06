@@ -8,9 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 //Enable MVC and DIJ Services for this application
 builder.Services.AddMvc();
 builder.Services.AddTransient<LuckySpin.Services.TextTransform>();
-builder.Services.AddSingleton<LuckySpin.Services.Repository>(); //TODO: remove this line
+//builder.Services.AddSingleton<LuckySpin.Services.Repository>(); //TODO DONE: remove this line
 //TODO: Initialize the DatabaseContext for DIJ using a Connection String as shown in the slides
-
+var connection = builder.Configuration.GetConnectionString("LuckySpinDb");
+builder.Services.AddDbContext<LuckySpin.Models.LuckySpinDbc>(options => options.UseSqlite(connection));
+    
 
 
 var app = builder.Build();
