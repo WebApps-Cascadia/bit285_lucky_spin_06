@@ -13,15 +13,14 @@ namespace LuckySpin.Controllers
         //      Check that the behavior of the application is the same at the end
 
         //TODO: Start here by inject a reference to the LuckySpinContext instead of the Repository
-        private Repository _repository;
-        //private LuckySpinDbc _dbc;
+        private LuckySpinDbc _dbc;
 
         /***
          * Controller Constructor //TODO: Use the LuckySpin Database Context instead of the repository
          */
-        public SpinnerController(Repository repository) 
+        public SpinnerController(Models.LuckySpinDbc dbc) 
         {
-            _repository = repository; 
+            this._dbc = dbc;
 
         }
 
@@ -46,41 +45,44 @@ namespace LuckySpin.Controllers
                 Luck = info.Luck,
                 Balance = info.StartingBalance
             };
-            _repository.Player = player; //TODO: remove this line
+            //_repository.Player = player; //TODO: remove this line
+            this._dbc.Players.Add(player);
+            this._dbc.SaveChanges();
 
             //TODO: Use _dbc to add the player to _dbc.Players and save changes to the database, instead of the repository
 
 
-            return RedirectToAction("Spin"); //TODO: Pass the player Id to Spin, using RedirectToAction("Spin", new {id = player.PlayerId})
+            return RedirectToAction("Spin", new {id = player.PlayerId}); //TODO: Pass the player Id to Spin, using RedirectToAction("Spin", new {id = player.PlayerId})
         }
 
         /***
          * Spin Action - Play one Spin
          **/  
          [HttpGet]      
-         public IActionResult Spin() //TODO: receive a id of type long as a parameter
+         public IActionResult Spin(long id) //TODO: receive a id of type long as a parameter
         {
-            Player player = _repository.Player; //TODO: remove this line
+            //Player player = _repository.Player; //TODO: remove this line
             //TODO: Get your particular player object using the _dbc.Players.Find(id) method
-            
+            var myPlayer = this._dbc.Players.Find(id);
 
             //Intialize a SpinVM with the player object from the data store
             SpinVM spinVM = new SpinVM() {
-                PlayerName = player.FirstName,
-                Luck = player.Luck,
-                CurrentBalance = player.Balance
+                PlayerName = myPlayer.FirstName,
+                Luck = myPlayer.Luck,
+                CurrentBalance = myPlayer.Balance
             };
 
             if (!spinVM.ChargeSpin())
             {
-                return RedirectToAction("LuckList"); //TODO: Pass the player Id to LuckList, like you did for Spin
+                return RedirectToAction("LuckList", new { id = myPlayer.PlayerId }); //TODO: Pass the player Id to LuckList, like you did for Spin
             }
  
             if (spinVM.Winner) { spinVM.CollectWinnings(); }
 
             // Update the Player record using value from the ViewModel
-            player.Balance = spinVM.CurrentBalance;
-            // TODO: Update the dbContext Players record 
+            myPlayer.Balance = spinVM.CurrentBalance;
+            // TODO: Update the dbContext Players record
+            this._dbc.SaveChanges();
 
 
             //Create a Spin using the logic from the SpinViewModel
@@ -90,8 +92,10 @@ namespace LuckySpin.Controllers
             };
 
             //Save the Spin to the data store
-            _repository.AddSpin(spin); // TODO: remove this line
+            //_repository.AddSpin(spin); // TODO: remove this line
             //TODO: Add the new spin to dbContext and save changes to the database
+            this._dbc.Spins.Add(spin);
+            this._dbc.SaveChanges();
 
             return View("Spin", spinVM); //Sends the updated spin info to the Spin View
         }
@@ -100,13 +104,15 @@ namespace LuckySpin.Controllers
          * ListSpins Action - Display Spin data
          **/
          [HttpGet]
-         public IActionResult LuckList() //TODO: receive a id of type long as a parameter
+         public IActionResult LuckList(long id) //TODO: receive a id of type long as a parameter
         {
             //TODO: Create the LuckListVm from the DbContext instead of the _repository
-            LuckListVM luckListVM = new LuckListVM
-            {
-                Player = _repository.Player, 
-                Spins = _repository.Spins
+            LuckListVM luckListVM = new LuckListVM { 
+
+                Player = this._dbc.Players.Find(id),
+                Spins = this._dbc.Spins
+                //Player = _repository.Player, 
+                //Spins = _repository.Spins
             };
             return View(luckListVM);
         }
