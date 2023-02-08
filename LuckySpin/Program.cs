@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +12,8 @@ builder.Services.AddTransient<LuckySpin.Services.TextTransform>();
 builder.Services.AddSingleton<LuckySpin.Services.Repository>(); //TODO: remove this line
 //TODO: Initialize the DatabaseContext for DIJ using a Connection String as shown in the slides
 
-
+var connection = builder.Configuration.GetConnectionString("LuckySpinDbWin");
+builder.Services.AddDbContext<LuckySpin.Models.LuckySpinDbc>(options=>options.UseSqlServer(connection));
 
 var app = builder.Build();
 
